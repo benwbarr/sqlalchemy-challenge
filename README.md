@@ -79,3 +79,39 @@ plt.show()
 ```python
 dp_df.describe()
 ```
+## Station Analysis
+
+- Design a query to calculate the total number of stations.
+```python
+station_count = session.query(Station).count()
+```
+- Design a query to find the most active stations.
+```python
+active_station = session.query(Measurement.station, func.count(Measurement.station)).\
+                 group_by(Measurement.station).\
+                 order_by(func.count(Measurement.station).desc()).\
+                 all()
+```
+- Design a query to retrieve the last 12 months of temperature observation data (TOBS).
+```python
+highest_temp = session.query(Measurement.station, Measurement.date, Measurement.tobs).\
+               filter(Measurement.station == highest_active_station).\
+               filter(Measurement.date > last_year).order_by(Measurement.date).all()
+```
+- Plot the results as a histogram with bins=12.
+```python
+highest_temp_q.plot.hist(bins = 12)
+plt.xlabel('Temperature')
+plt.ylabel('Frequency')
+plt.title('Most Active Station: ' + highest_active_station)
+
+plt.show()
+```
+![alt text](https://github.com/benwbarr/sqlalchemy-challenge/blob/main/Images/histogram.PNG?raw=true)
+
+
+
+
+
+
+
