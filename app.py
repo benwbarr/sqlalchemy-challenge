@@ -1,4 +1,3 @@
-  
 import numpy as np
 import pandas as pd
 import datetime as dt
@@ -20,33 +19,58 @@ Station = Base.classes.station
 
 session = Session(engine)
 
-#weather app
 app = Flask(__name__)
-
-
-latestDate = (session.query(Measurement.date)
-                .order_by(Measurement.date.desc())
-                .first())
-latestDate = list(np.ravel(latestDate))[0]
-
-latestDate = dt.datetime.strptime(latestDate, '%Y-%m-%d')
-latestYear = int(dt.datetime.strftime(latestDate, '%Y'))
-latestMonth = int(dt.datetime.strftime(latestDate, '%m'))
-latestDay = int(dt.datetime.strftime(latestDate, '%d'))
-
-yearBefore = dt.date(latestYear, latestMonth, latestDay) - dt.timedelta(days=365)
-yearBefore = dt.datetime.strftime(yearBefore, '%Y-%m-%d')
-
-
 
 
 @app.route("/")
 def home():
     return (f"Welcome<br/>"
+            f"----------------------------------------------------<br/>"
             f"Available Routes:<br/>"
-            f"/api/v1.0/stations ------ Weather observation stations<br/>"
+            f"----------------------------------------------------<br/>"
             f"/api/v1.0/precipitaton -- Preceipitation data<br/>"
+            f"----------------------------------------------------<br/>"
+            f"/api/v1.0/stations ------ Weather observation stations<br/>"
+            f"----------------------------------------------------<br/>"
             f"/api/v1.0/temperature --- Temperature data<br/>"
-            f"/api/v1.0/start<br/>"
-            f"/api/v1.0/start/end<br/>")
+            f"----------------------------------------------------<br/>"
+            f"/api/v1.0/start---------- Datesearch (yyyy-mm-dd)--- Lists the minimum temperature, the average temperature, and the max temperature for date given.<br/>"
+            f"----------------------------------------------------<br/>"
+            f"/api/v1.0/start/end-------Datesearch (yyyy-mm-dd/yyyy-mm-dd)-- Lists the minimum temperature, the average temperature, and the max temperature for date range given.<br/>")
 
+@app.route("/api/v1.0/precipitaton")
+def precipitation():
+    results = session.query(Measurement.date, Measurement.prcp).\
+        filter(Measurement.date >= "2016-08-23").all()
+    results_json = [results]
+    return jsonify(results_json)
+
+@app.route("/api/v1.0/stations")
+def stations():
+    results = session.query(Station.name).all()
+    stations_json = list(np.ravel(results))
+    return jsonify(stations_json) 
+                   
+@app.route("/api/v1.0/tobs")
+def temp_obs():                   
+    results = session.query(Station.name, Measurement.date, Measurement.tobs).\
+        filter(Measurement.date >= "2016-08-23").all()
+    obs_json = list(np.ravel(results))
+    return jsonify(obs_json)                   
+                   
+@app.route("/api/v1.0/<start>")
+def start_date(start):
+    results = session.query(Measurement.date, func.avg(Measurement.tobs), func.max(Measurement.tobs),func.min(Measurement.tobs)).\
+        filter(Measurement.date >= start).all()               
+    start_json = list(np.ravel(results))
+    return jsonify(start_json)               
+                   
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start, end):                   
+    results = session.query(func.avg(Measurement.tobs), func.max(Measurement.tobs), func.min(Measurement.tobs)).\
+        filter(Measurement.date >= start, Measurement.date <= end).all()
+    end_json = list(np.ravel(results))
+    return jsonify(end_json)        
+        
+if __name__ == '__main__':
+    app.run(debug=True) 
